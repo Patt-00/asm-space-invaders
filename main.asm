@@ -31,6 +31,7 @@ game_loop:
     call check_collisions
     call update_features
     call draw_game
+    call wait_frame
 
     cmp byte [game_state], PLAYING
     je game_loop
@@ -127,6 +128,21 @@ read_input:
 .quit:
     mov byte [game_state], QUIT
 .done:
+    ret
+
+; -------------------------------------------------
+; Procedure: wait_frame
+; Purpose: Make movement visible instead of running the loop at full CPU speed.
+; Input: None
+; Output: Approximately 50 milliseconds pass when BIOS wait is supported.
+; Modifies: AX, CX, DX
+; Shared variables used: None
+; -------------------------------------------------
+wait_frame:
+    mov ah, 86h
+    mov cx, 0
+    mov dx, 50000
+    int 15h
     ret
 
 %include "modules/player.asm"
