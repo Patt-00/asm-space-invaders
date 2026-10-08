@@ -5,8 +5,8 @@
 ; Purpose: Run all collision checks for one game loop iteration.
 ; Input: None
 ; Output: Shared state may change after a collision.
-; Modifies: AX
-; Shared variables used: bullet_active, enemy_alive, player_lives
+; Modifies: AX, BX, flags
+; Shared variables used: bullets_active, enemy_alive, enemy_health, player_lives
 ; -------------------------------------------------
 check_collisions:
     call check_bullet_enemy
@@ -15,40 +15,54 @@ check_collisions:
 
 ; -------------------------------------------------
 ; Procedure: check_bullet_enemy
-; Purpose: Detect whether the bullet is within the enemy rectangle.
-; Input: None
-; Output: Enemy is removed, score increases, and game ends when hit.
-; Modifies: AX, BX
-; Shared variables used: bullet_x, bullet_y, bullet_active, enemy_x, enemy_y,
-;                        enemy_alive, score, game_state
+; Purpose: Rectangle collision for all projectile sprites against the prototype enemy.
+; Input: None. Output: Hit shots removed; damage applied; dead enemy awards score.
+; Modifies: AX, BX, flags (SI preserved).
+; Shared: bullets_x/y/active/damage, enemy_x/y/health/alive, score, game_state.
 ; -------------------------------------------------
 check_bullet_enemy:
-    cmp byte [bullet_active], 1
-    jne .done
     cmp byte [enemy_alive], 1
     jne .done
-
-    mov al, [bullet_x]
-    cmp al, [enemy_x]
-    jb .done
+    push si
+    xor si, si
+.loop:
+    cmp byte [bullets_active + si], 1
+    jne .next
+    mov al, [bullets_x + si]
     mov bl, [enemy_x]
     add bl, ENEMY_WIDTH
     cmp al, bl
-    jae .done
-
-    mov al, [bullet_y]
-    cmp al, [enemy_y]
-    jb .done
+    jae .next
+    add al, WEAPON_WIDTH
+    cmp al, [enemy_x]
+    jbe .next
+    mov al, [bullets_y + si]
     mov bl, [enemy_y]
     add bl, ENEMY_HEIGHT
     cmp al, bl
-    jae .done
-
+    jae .next
+    add al, WEAPON_HEIGHT
+    cmp al, [enemy_y]
+    jbe .next
+    mov al, [bullets_damage + si]
+    call remove_bullet_slot
+    cmp al, [enemy_health]
+    jae .defeated
+    sub [enemy_health], al
+    jmp .next
+.defeated:
+    mov byte [enemy_health], 0
     mov byte [enemy_alive], 0
-    call remove_bullet
     add word [score], 10
-    ; One defeated enemy completes this architecture demonstration round.
+    ; Stage progression remains Developer 1's integration responsibility.
     mov byte [game_state], GAME_OVER
+    jmp .restore
+.next:
+    inc si
+    cmp si, MAX_BULLETS
+    jb .loop
+.restore:
+    pop si
 .done:
     ret
 

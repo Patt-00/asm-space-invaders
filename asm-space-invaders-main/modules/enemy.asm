@@ -9,7 +9,7 @@
 ; Shared variables used: enemy_x, enemy_y, enemy_alive
 ; -------------------------------------------------
 initialize_enemies:
-    mov byte [enemy_x], 37
+    mov byte [enemy_x], (SCREEN_WIDTH - ENEMY_WIDTH) / 2
     mov byte [enemy_y], 4
     mov byte [enemy_alive], 1
     ret

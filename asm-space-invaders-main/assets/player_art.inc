@@ -1,3 +1,18 @@
-; Player sprite data.  Display code chooses its position.
-player_art_line1 db ' /A\ ', 0
-player_art_line2 db '/___\', 0
+; Original 12x16 document artwork. Drawn at native size, one character per cell.
+player_art:
+    db '  ########  '
+    db '  ########  '
+    db '  ########  '
+    db '  ########  '
+    db '############'
+    db '## HH @@ HH '
+    db '## HHHHHHHH '
+    db '  ########  '
+    db '  ## JJJJ ##'
+    db '#### WW ####'
+    db '## W[P]W WW '
+    db '## WWWWWWWW '
+    db '  ## KK ##  '
+    db '  ## KK ##  '
+    db '  ## KK ##  '
+    db '####    ####'

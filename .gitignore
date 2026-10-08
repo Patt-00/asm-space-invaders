@@ -1,0 +1,6 @@
+# Generated DOS executables, runtime logs, and local verification images.
+*.COM
+RESULT.TXT
+*.log
+*-preview.png
+asm-space-invaders-main/capture/

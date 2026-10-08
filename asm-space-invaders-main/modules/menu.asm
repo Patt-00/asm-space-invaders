@@ -6,7 +6,10 @@
 menu_play_text db '1. PLAY', 0
 menu_quit_text db '2. QUIT', 0
 menu_hint_text db 'Press 1, P, or SPACE to play.  Press 2, Q, or ESC to quit.', 0
+menu_hint_end:
 over_hint_text db 'Press R or SPACE to restart.  Press Q or ESC to quit.', 0
+
+over_hint_end:
 
 ; -------------------------------------------------
 ; Procedure: show_main_menu
@@ -18,26 +21,27 @@ over_hint_text db 'Press R or SPACE to restart.  Press Q or ESC to quit.', 0
 ; -------------------------------------------------
 show_main_menu:
     call clear_screen
-    mov dh, 5
-    mov dl, 28
+    mov dh, SCREEN_HEIGHT / 2 - 8
+    mov dl, (SCREEN_WIDTH - title_art_width) / 2
     call set_cursor
     mov si, title_art_line1
     call print_string
-    mov dh, 7
-    mov dl, 35
+    mov dh, SCREEN_HEIGHT / 2 - 5
+    mov dl, (SCREEN_WIDTH - 7) / 2
     call set_cursor
     mov si, menu_play_text
     call print_string
-    mov dh, 8
-    mov dl, 35
+    mov dh, SCREEN_HEIGHT / 2 - 4
+    mov dl, (SCREEN_WIDTH - 7) / 2
     call set_cursor
     mov si, menu_quit_text
     call print_string
-    mov dh, 12
-    mov dl, 9
+    mov dh, SCREEN_HEIGHT / 2 + 4
+    mov dl, (SCREEN_WIDTH - (menu_hint_end - menu_hint_text - 1)) / 2
     call set_cursor
     mov si, menu_hint_text
     call print_string
+    call present_frame
     ret
 
 ; -------------------------------------------------
@@ -50,16 +54,17 @@ show_main_menu:
 ; -------------------------------------------------
 show_game_over:
     call clear_screen
-    mov dh, 7
-    mov dl, 27
+    mov dh, SCREEN_HEIGHT / 2 - 5
+    mov dl, (SCREEN_WIDTH - gameover_art_width) / 2
     call set_cursor
     mov si, gameover_art_line1
     call print_string
-    mov dh, 12
-    mov dl, 11
+    mov dh, SCREEN_HEIGHT / 2 + 4
+    mov dl, (SCREEN_WIDTH - (over_hint_end - over_hint_text - 1)) / 2
     call set_cursor
     mov si, over_hint_text
     call print_string
+    call present_frame
     ret
 
 ; -------------------------------------------------

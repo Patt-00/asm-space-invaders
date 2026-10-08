@@ -1,4 +1,4 @@
-; Space Invaders architecture prototype for NASM, DOS, and 80x25 text mode.
+; Food Invaders player/weapon integration prototype for NASM, DOS, and 132x120 text mode.
 ; Build with: nasm -f bin main.asm -o INVADERS.COM
 
 bits 16
@@ -44,21 +44,33 @@ game_loop:
     je new_game
 
 quit_program:
+    mov ax, 0003h             ; Restore the normal DOS text mode.
+    int 10h
     mov ax, 4C00h
     int 21h
 
 ; -------------------------------------------------
 ; Procedure: initialize_program
-; Purpose: Select the standard DOS text mode.
+; Purpose: Initialize the larger native-character battlefield.
 ; Input: None
-; Output: Screen is in 80x25 text mode.
-; Modifies: AX
-; Shared variables used: None
+; Output: Screen is in 132x120 text mode; cursor is hidden.
+; Modifies: Flags on success; exits DOS on failure.
+; Shared variables used: Display-owned video state.
 ; -------------------------------------------------
 initialize_program:
+    call initialize_display
+    jnc .ready
     mov ax, 0003h
     int 10h
+    mov dx, video_error_text
+    mov ah, 09h
+    int 21h
+    mov ax, 4C01h
+    int 21h
+.ready:
     ret
+video_error_text db 'Food Invaders requires DOSBox-X with SVGA S3 video.', 13, 10, '$'
+
 
 ; -------------------------------------------------
 ; Procedure: initialize_game
@@ -69,13 +81,12 @@ initialize_program:
 ; Shared variables used: All game state variables
 ; -------------------------------------------------
 initialize_game:
-    mov byte [player_x], 38
-    mov byte [player_y], 22
-    mov byte [player_lives], 3
-    mov byte [bullet_active], 0
-    mov byte [enemy_x], 37
+    call initialize_player
+    call initialize_bullets
+    mov byte [enemy_x], (SCREEN_WIDTH - ENEMY_WIDTH) / 2
     mov byte [enemy_y], 4
     mov byte [enemy_alive], 1
+    mov byte [enemy_health], INITIAL_ENEMY_HEALTH
     mov word [score], 0
     mov byte [current_wave], 1
     mov byte [shield_active], 0
@@ -111,6 +122,10 @@ read_input:
     je .right
     cmp al, ' '
     je .fire
+    cmp al, 'x'
+    je .secondary
+    cmp al, 'X'
+    je .secondary
     cmp ah, 4Bh                 ; Left arrow scan code
     je .left
     cmp ah, 4Dh                 ; Right arrow scan code
@@ -124,6 +139,9 @@ read_input:
     jmp .done
 .fire:
     call fire_bullet
+    jmp .done
+.secondary:
+    call fire_secondary
     jmp .done
 .quit:
     mov byte [game_state], QUIT
