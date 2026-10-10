@@ -66,6 +66,35 @@ The chef, kitchen cleaver, and rolling pin use the original ASCII artwork from t
 
 Developer 2's player and weapon logic supports three projectile slots, weapon-specific damage, firing cooldowns, lives, and timed movement/damage/fire-rate boosts including a cleaver burst. Cleavers have a 24-frame cooldown (about 1.2 seconds), and rolling pins have a 40-frame cooldown (about 2 seconds); boosted cooldowns are 20 and 32 frames. Both weapons now move three rows per frame, three times their previous speed. Their speed does not alter damage or cooldowns. The three-shot pool and shared cooldown prevent weapon-switch spam. Developer 4 can enable the boost by calling `activate_player_powerup` when a pickup is caught. The current enemy remains static but has eight health points (eight cleavers or four rolling pins): defeating it awards 10 points and ends the demonstration round. Enemy movement/attacks, stage progression, bosses, difficulty selection, and catchable pickup spawning are still integration work for the other owners. See [DEVELOPER2.md](DEVELOPER2.md) for the interfaces and verification. The Termux launcher centers a native 1056×960 window using software output to preserve the glyph proportions and avoid SDL2/OpenGL resize issues; relaunch after rotating the device to recenter it.
 
+## Collision module
+
+Call `check_collisions` after movement updates. It checks weapon hits, chef contact, then bottom breaches, and stops if the game leaves `PLAYING`. Each individual check also guards the game state and ignores a removed enemy. All four public procedures require DS to address the shared variables, take no register arguments, return through shared state, may modify AX and flags, and preserve every other general-purpose register.
+
+| Procedure | Detection and result |
+| --- | --- |
+| `check_bullet_enemy` | Tests every active 6×8 weapon rectangle against the 5×3 enemy. Consumes colliding shots using `remove_bullet_slot`, applies captured damage, and awards 10 points only on defeat. A lethal hit ends the demo with `GAME_OVER`; later slots remain untouched. |
+| `check_enemy_player` | Tests the living enemy against the 12×16 chef. Removes the enemy and calls `player_hit` once, without awarding points or consuming unrelated projectiles. |
+| `check_enemy_bottom` | Removes a living enemy and calls `player_hit` when `enemy_y + ENEMY_HEIGHT >= SCREEN_HEIGHT`: its lowest occupied row reaches row 119. Awards no points. |
+
+Hitboxes include all sprite cells, including spaces. Bounds are half-open (`[x, x + width)`, `[y, y + height)`), so adjacent sprites need an occupied cell in common to collide. Endpoint arithmetic uses 16-bit values to avoid byte wraparound. Contact and breaches clear both `enemy_alive` and `enemy_health` before damage, preventing two life deductions in the same frame or repeated checks. If lives remain after removing the only enemy, the prototype stays `PLAYING`; respawning and stage completion are future progression work. The current stationary enemy requires controlled coordinates to exercise contact and breaches.
+
+### Future Food Invaders integration
+
+- Enemy logic will own entity pools, dimensions, health, kill rewards, and a damage procedure. Collision will send damage through that interface and award kill points once. Boss contact needs its own policy rather than removing a boss on chef contact.
+- Weapon logic owns projectile pools, captured damage, movement, and consumption. Basic shots consume themselves on the first valid target; secondary piercing or area effects need an explicit policy when introduced. Revisit collision along the movement path if future speeds can skip entire hitboxes.
+- Route enemy attack and breach damage through `player_hit`. Player/features logic owns future immunity and shield behavior. Collision will consume caught pickups once; features logic applies effects and manages timers through interfaces such as `activate_player_powerup`.
+- Progression logic will own stage completion, boss scheduling, and victory, replacing the demo's `GAME_OVER` on a kill. Collision uses shared dimensions and damage values; difficulty selection and movement rates stay with their respective owners.
+
+### Collision tests
+
+From the project directory, assemble the dedicated harness:
+
+```bat
+nasm -f bin tests/collision.asm -o COLLTEST.COM
+```
+
+Run `COLLTEST.COM > RESULT.TXT` in DOSBox-X. It needs no graphics mode or keyboard input, prints `PASS` or a specific failure, and exits with status 0 or 1. Tests cover sprite edges/corners and adjacency, projectile slots and damage, life exhaustion, bottom thresholds and overshoot, simultaneous collision priority, repeated checks, non-playing states, byte-limit coordinates, register preservation, and stack balance. The existing `tests/player-bullet.asm` harness covers weapon and rendering integration.
+
 ## Team ownership and integration rules
 
 | Developer | Files to modify |
